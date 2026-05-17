@@ -3,7 +3,6 @@
 > Build a persistent **"taste brain"** that understands *why* you love the music you do, and generates emotionally-aligned playlists for any life context.
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-purple.svg)](./LICENSE)
-[![Sponsor MusiBrain](https://img.shields.io/badge/Sponsor-MusiBrain-pink.svg)](./.github/FUNDING.yml)
 [![Stack: Next.js + Prisma](https://img.shields.io/badge/Stack-Next.js%20%7C%20Prisma%20%7C%20Postgres-cyan.svg)](#-tech-stack)
 
 MusiBrain goes beyond simple streaming histories. By combining direct user taste interviews with Spotify audio features and Large Language Models (LLMs), MusiBrain builds a highly detailed, inspectable, and persistent model of your music tastes—capturing the emotional resonance, lyrical themes, and musical structures that make songs "hit" for you.
@@ -79,15 +78,12 @@ npm run dev
 
 This project is open-source and licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**. 
 
-### 🛡️ What this means for individuals
-You are **free** to use, self-host, copy, modify, and distribute MusiBrain for personal, academic, or non-commercial open-source purposes. Your freedom is fully guaranteed by the AGPL-3.0.
-
-### 🚫 What this means for companies & commercial platforms
+### 🚫 Commercial Platforms & Companies
 If you are a company, a startup, or a commercial platform looking to use MusiBrain:
 * **The Copyleft Requirement:** If you host a modified version of MusiBrain on a server and offer it as a service over a network, the AGPL-3.0 **forces you to make your entire platform's source code publicly available under the AGPL-3.0**.
 * **Commercial Exemption Licenses:** If you want to use MusiBrain commercially, integrate it into a proprietary application, or run it as a service *without* open-sourcing your code, you **must purchase a Commercial License** directly from the author. 
 
-For inquiries regarding commercial licensing or custom integration partnerships, please contact **`bilalahmed@example.com`** (replace with your primary email).
+For inquiries regarding commercial licensing or custom integration partnerships, please contact **`bilalahmed21905@gmail.com`**.
 
 ---
 
@@ -96,7 +92,5 @@ For inquiries regarding commercial licensing or custom integration partnerships,
 MusiBrain is an independent project built with love for music obsessed listeners. If you want to support development, prioritize new features, or sponsor my work, please consider supporting me:
 
 - **[Sponsor via GitHub Sponsors](https://github.com/sponsors/bilalahmed)** — Select a tier (from supporting the developer to corporate sponsorship).
-- **[Support on Buy Me A Coffee](https://buymeacoffee.com/bilalahmed)** — Support with a one-time tip!
-- **[Pledge on Polar.sh](https://polar.sh/bilalahmed)** — Place a bounty on active issues and fund specific feature implementations.
 
 Thank you for supporting independent open-source developers! 🎧✨
