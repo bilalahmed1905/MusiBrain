@@ -1,0 +1,104 @@
+.profilePage {
+  animation: fadeIn 0.4s ease;
+}
+
+.emptyProfile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 60vh;
+}
+
+.summaryCard {
+  padding: var(--space-xl);
+}
+
+.summaryHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-lg);
+}
+
+.summaryText {
+  font-size: var(--text-base);
+  line-height: 1.8;
+  color: var(--text-secondary);
+}
+
+.summaryText p {
+  margin-bottom: var(--space-md);
+}
+
+.summaryText p:last-child {
+  margin-bottom: 0;
+}
+
+.cardTitle {
+  font-size: var(--text-base);
+  font-weight: 600;
+  margin-bottom: var(--space-sm);
+}
+
+.tagsCard, .moodsCard {
+  padding: var(--space-xl);
+}
+
+.tagsContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.profileTag {
+  font-size: var(--text-sm) !important;
+  padding: 6px 14px !important;
+}
+
+.tagIntensity {
+  font-size: var(--text-xs);
+  opacity: 0.6;
+  font-family: var(--font-mono);
+}
+
+.moodsList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.moodItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.moodDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--teal);
+  flex-shrink: 0;
+}
+
+.vizCard {
+  padding: var(--space-xl);
+}
+
+.intensityBars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.ctaSection {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-2xl);
+  padding-top: var(--space-xl);
+  border-top: 1px solid var(--border);
+}

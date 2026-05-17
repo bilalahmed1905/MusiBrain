@@ -1,0 +1,92 @@
+.dashboard {
+  animation: fadeIn 0.4s ease;
+}
+
+.stepsSection {
+  margin-bottom: var(--space-2xl);
+}
+
+.stepsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-lg);
+}
+
+.stepCard {
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  transition: all var(--transition-base);
+}
+
+.stepCard:hover {
+  transform: translateY(-2px);
+}
+
+.stepHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stepIcon {
+  font-size: 1.5rem;
+}
+
+.stepTitle {
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
+.stepDesc {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.stepDetail {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-top: auto;
+  padding-top: var(--space-sm);
+}
+
+.stepCard.complete {
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+.stepCard.in-progress {
+  border-color: rgba(6, 182, 212, 0.2);
+}
+
+.quickActions {
+  margin-top: var(--space-xl);
+}
+
+.contextQuick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  text-align: center;
+  text-decoration: none;
+  color: var(--text-primary);
+  font-weight: 500;
+  font-size: var(--text-sm);
+  padding: var(--space-xl);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.contextQuick:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+
+@media (max-width: 768px) {
+  .stepsGrid {
+    grid-template-columns: 1fr;
+  }
+}

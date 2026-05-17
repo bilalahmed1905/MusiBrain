@@ -1,0 +1,172 @@
+.playlistsPage {
+  animation: fadeIn 0.4s ease;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 60vh;
+}
+
+/* ── Context Grid ── */
+.contextsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-lg);
+}
+
+.contextBtn {
+  text-align: left;
+  border: none;
+}
+
+/* ── Generating Animation ── */
+.generatingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: var(--space-lg);
+}
+
+.brainAnimation {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.brainEmoji {
+  font-size: 4rem;
+  animation: brainPulse 2s ease-in-out infinite;
+  z-index: 2;
+  position: relative;
+}
+
+@keyframes brainPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.pulseRing {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  animation: pulseExpand 2s ease-out infinite;
+}
+
+@keyframes pulseExpand {
+  0% { transform: scale(0.8); opacity: 0.8; }
+  100% { transform: scale(2); opacity: 0; }
+}
+
+.generatingSteps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+}
+
+.genStep {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  animation: fadeIn 0.5s ease forwards;
+  opacity: 0;
+}
+
+.genStep:nth-child(1) { animation-delay: 0s; }
+.genStep:nth-child(2) { animation-delay: 3s; }
+.genStep:nth-child(3) { animation-delay: 8s; }
+
+/* ── Error ── */
+.errorCard {
+  max-width: 500px;
+  margin: var(--space-2xl) auto;
+  text-align: center;
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+/* ── Playlist Result ── */
+.playlistResult {
+  animation: fadeIn 0.5s ease;
+}
+
+.playlistHeader {
+  margin-bottom: var(--space-xl);
+}
+
+.playlistMeta {
+  margin: var(--space-lg) 0;
+}
+
+.playlistActions {
+  display: flex;
+  gap: var(--space-md);
+}
+
+/* ── Track List ── */
+.trackList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.trackCard {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-lg);
+  padding: var(--space-lg);
+}
+
+.trackNumber {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  padding-top: 2px;
+  min-width: 28px;
+}
+
+.trackMain {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.trackDetails {
+  display: flex;
+  flex-direction: column;
+}
+
+.trackTitle {
+  font-weight: 600;
+  font-size: var(--text-base);
+}
+
+.trackArtist {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.trackReason {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  font-style: italic;
+  line-height: 1.5;
+  padding: var(--space-sm) 0;
+  border-left: 2px solid var(--accent-subtle);
+  padding-left: var(--space-md);
+  margin: var(--space-xs) 0;
+}
+
+@media (max-width: 768px) {
+  .contextsGrid {
+    grid-template-columns: 1fr;
+  }
+}

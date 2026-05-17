@@ -1,0 +1,111 @@
+// MusiBrain Database Schema
+// SQLite via Prisma — designed for easy migration to PostgreSQL/Supabase
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  displayName  String
+  email        String?  @unique
+  profileImage String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tasteProfile TasteProfile?
+  favourites   Favourite[]
+  playlists    Playlist[]
+  cachedTracks CachedTrack[]
+  sessions     Session[]
+  trackFeedbacks TrackFeedback[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model TasteProfile {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  semanticTags   String   @default("[]") // JSON array: ["melancholy indie", "cinematic builds"]
+  moods          String   @default("[]") // JSON array: ["nostalgic", "introspective"]
+  summaryText    String   @default("") // 2-3 paragraph user-facing summary
+  internalNotes  String   @default("") // LLM-generated internal analysis for playlist gen
+  tagIntensities String   @default("{}") // JSON: {"melancholy indie": 0.8, "cinematic": 0.6}
+  lastUpdated    DateTime @default(now())
+  createdAt      DateTime @default(now())
+}
+
+model Favourite {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trackId        String // Platform-agnostic unique ID (Last.fm: "artist::track")
+  trackName      String
+  artistName     String
+  albumName      String   @default("")
+  albumArt       String?
+  previewUrl     String?
+  loveReason     String   @default("") // "What do you love about this song?"
+  moodAnswer     String   @default("") // "What mood are you in when you put it on?"
+  tags           String   @default("[]") // JSON array of selected tags
+  orderIndex     Int      @default(0)
+  isFinalized    Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  @@unique([userId, trackId])
+}
+
+model Playlist {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  context        String // "late-night-drive", "studying", "gym", "party"
+  name           String
+  description    String   @default("")
+  tracks         String   @default("[]") // JSON array of track objects with blurbs + platform links
+  cachedAt       DateTime @default(now())
+  cacheExpiresAt DateTime
+  ytMusicId      String? // YouTube Music playlist ID if auto-created
+  createdAt      DateTime @default(now())
+}
+
+model TrackFeedback {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trackId      String   // e.g., "artist::track"
+  trackName    String
+  artistName   String
+  feedbackType String   // "nailed_it", "failed_it", "already_have", "wow_so_good"
+  createdAt    DateTime @default(now())
+
+  @@unique([userId, trackId])
+}
+
+model CachedTrack {
+  id            String   @id @default(cuid())
+  trackId       String   @unique // "artist::track" normalized key
+  trackName     String
+  artistName    String
+  albumName     String   @default("")
+  albumArt      String?
+  lastfmTags    String?  @default("[]") // JSON array from Last.fm
+  similarTracks String?  @default("[]") // JSON array of similar track IDs
+  platformLinks String?  @default("{}") // JSON: {spotify: "url", apple: "url", youtube: "url"}
+  cachedAt      DateTime @default(now())
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id])
+}

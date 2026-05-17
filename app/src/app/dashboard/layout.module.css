@@ -1,0 +1,68 @@
+.mobileToggle {
+  display: none;
+  position: fixed;
+  top: var(--space-md);
+  left: var(--space-md);
+  z-index: calc(var(--z-sticky) + 1);
+  font-size: var(--text-lg);
+}
+
+.mobileOverlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: calc(var(--z-sticky) - 1);
+}
+
+.userCard {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  border-top: 1px solid var(--border);
+  margin-top: auto;
+}
+
+.userAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--accent-dark), var(--accent));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: var(--text-sm);
+  flex-shrink: 0;
+}
+
+.userInfo {
+  min-width: 0;
+}
+
+.userName {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.userEmail {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 768px) {
+  .mobileToggle {
+    display: flex;
+  }
+
+  .mobileOverlay {
+    display: block;
+  }
+}

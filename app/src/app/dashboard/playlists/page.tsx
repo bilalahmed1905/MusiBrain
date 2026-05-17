@@ -1,0 +1,386 @@
+'use client';
+
+import { useEffect, useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import styles from './page.module.css';
+
+interface PlatformLinks {
+  spotify?: string;
+  appleMusic?: string;
+  youtubeMusic?: string;
+  youtube?: string;
+  tidal?: string;
+  amazonMusic?: string;
+}
+
+interface PlaylistTrack {
+  name: string;
+  artist: string;
+  reason: string;
+  platformLinks: PlatformLinks;
+  thumbnailUrl?: string;
+  songLinkUrl?: string;
+}
+
+interface Playlist {
+  id: string;
+  context: string;
+  name: string;
+  description: string;
+  tracks: PlaylistTrack[];
+  fromCache?: boolean;
+  createdAt: string;
+}
+
+const CONTEXTS = [
+  { id: 'general', title: 'General Recommendations', icon: '✨', desc: 'A curated mix based entirely on your newly built taste brain', gradient: 'linear-gradient(135deg, #1a3e3e, #1b2d4e)' },
+  { id: 'late-night-drive', title: 'Late Night Drive', icon: '🌙', desc: 'Moody, atmospheric tracks for nocturnal cruising', gradient: 'linear-gradient(135deg, #1a1a3e, #2d1b4e)' },
+  { id: 'studying', title: 'Studying / Deep Focus', icon: '📚', desc: 'Focused atmosphere without demanding attention', gradient: 'linear-gradient(135deg, #1a2e1a, #1b3d4e)' },
+  { id: 'gym', title: 'Gym / Workout', icon: '🔥', desc: 'High energy, strong rhythm, relentless momentum', gradient: 'linear-gradient(135deg, #3e1a1a, #4e2d1b)' },
+  { id: 'party', title: 'Party Mode', icon: '🎉', desc: 'Crowd-pleasing bangers and groove-heavy tracks', gradient: 'linear-gradient(135deg, #3e1a3e, #4e1b2d)' },
+];
+
+const PLATFORM_INFO: Record<string, { label: string; color: string; className: string }> = {
+  spotify: { label: '● Spotify', color: 'var(--spotify-green)', className: 'spotify' },
+  appleMusic: { label: '● Apple Music', color: 'var(--apple-pink)', className: 'apple' },
+  youtubeMusic: { label: '● YouTube Music', color: 'var(--youtube-red)', className: 'youtube' },
+  tidal: { label: '● Tidal', color: 'var(--tidal-blue)', className: '' },
+  amazonMusic: { label: '● Amazon', color: 'var(--amazon-orange)', className: '' },
+};
+
+function PlaylistsContent() {
+  const searchParams = useSearchParams();
+  const [userId, setUserId] = useState('');
+  const [activeContext, setActiveContext] = useState<string | null>(null);
+  const [playlist, setPlaylist] = useState<Playlist | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState('');
+  const [hasProfile, setHasProfile] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  
+  // New State for Feedback and Export
+  const [feedbacks, setFeedbacks] = useState<Record<string, string>>({});
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState('');
+  const [exportUrl, setExportUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('musibrain_user');
+    if (stored) {
+      const u = JSON.parse(stored);
+      setUserId(u.id);
+      checkProfile(u.id);
+    }
+
+    const contextParam = searchParams.get('context');
+    if (contextParam) {
+      setActiveContext(contextParam);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (activeContext && userId && hasProfile) {
+      generatePlaylist(activeContext);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeContext, userId, hasProfile]);
+
+  const checkProfile = async (uid: string) => {
+    try {
+      const res = await fetch(`/api/taste-profile?userId=${uid}`);
+      const data = await res.json();
+      setHasProfile(!!data.profile);
+    } finally {
+      setLoadingProfile(false);
+    }
+  };
+
+  const generatePlaylist = async (context: string, forceRegenerate = false) => {
+    setIsGenerating(true);
+    setError('');
+    setPlaylist(null);
+
+    try {
+      const res = await fetch('/api/playlists', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, context, forceRegenerate }),
+      });
+
+      const data = await res.json();
+      if (data.error) {
+        setError(data.error);
+      } else {
+        setPlaylist(data.playlist);
+        setExportUrl(null); // Reset export url
+        setExportError('');
+      }
+    } catch {
+      setError('Failed to generate playlist. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const exportToYTMusic = async () => {
+    if (!playlist || !userId) return;
+    setIsExporting(true);
+    setExportError('');
+    try {
+      const res = await fetch('/api/export/ytmusic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playlistId: playlist.id, userId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Export failed');
+      setExportUrl(data.playlistUrl);
+    } catch (err: any) {
+      setExportError(err.message);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleFeedback = async (track: PlaylistTrack, type: string) => {
+    const trackKey = `${track.name}::${track.artist}`;
+    setFeedbacks(prev => ({ ...prev, [trackKey]: type }));
+    
+    try {
+      await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          trackId: trackKey,
+          trackName: track.name,
+          artistName: track.artist,
+          feedbackType: type,
+        }),
+      });
+    } catch (err) {
+      console.error('Failed to log feedback', err);
+    }
+  };
+
+  if (loadingProfile) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 400 }}>
+        <div className="spinner spinner-lg" />
+      </div>
+    );
+  }
+
+  if (!hasProfile) {
+    return (
+      <div className={styles.emptyState}>
+        <div style={{ fontSize: '4rem', marginBottom: 'var(--space-lg)' }}>🎧</div>
+        <h2 className="heading-md">Build Your Taste Profile First</h2>
+        <p className="text-secondary" style={{ marginBottom: 'var(--space-xl)', maxWidth: 400, lineHeight: 1.6 }}>
+          Complete the taste interview and generate your profile before creating playlists.
+        </p>
+        <Link href="/dashboard/interview" className="btn btn-primary btn-lg">
+          Start Taste Interview →
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.playlistsPage}>
+      <div className="page-header">
+        <h1 className="page-title">
+          Your <span className="text-gradient">Playlists</span>
+        </h1>
+        <p className="page-subtitle">
+          Choose a context and let your taste brain curate the perfect playlist.
+        </p>
+      </div>
+
+      {/* Context Selection */}
+      {!activeContext && (
+        <div className={styles.contextsGrid}>
+          {CONTEXTS.map(ctx => (
+            <button
+              key={ctx.id}
+              className={`context-card ${styles.contextBtn}`}
+              style={{ background: ctx.gradient }}
+              onClick={() => setActiveContext(ctx.id)}
+            >
+              <span className="context-icon">{ctx.icon}</span>
+              <span className="context-title">{ctx.title}</span>
+              <span className="context-desc">{ctx.desc}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Generating State */}
+      {isGenerating && (
+        <div className={styles.generatingState}>
+          <div className={styles.brainAnimation}>
+            <span className={styles.brainEmoji}>🧠</span>
+            <div className={styles.pulseRing} />
+            <div className={styles.pulseRing} style={{ animationDelay: '0.5s' }} />
+          </div>
+          <h2 className="heading-sm">Building Your Playlist...</h2>
+          <p className="text-secondary" style={{ maxWidth: 400, textAlign: 'center', lineHeight: 1.6 }}>
+            Discovering similar tracks, analyzing your taste profile, and curating the perfect mix. This usually takes 15-30 seconds.
+          </p>
+          <div className={styles.generatingSteps}>
+            <span className={styles.genStep}>🔍 Finding similar tracks via Last.fm</span>
+            <span className={styles.genStep}>🧠 AI curating based on your taste</span>
+            <span className={styles.genStep}>🔗 Getting cross-platform links</span>
+          </div>
+        </div>
+      )}
+
+      {/* Error */}
+      {error && (
+        <div className={`card ${styles.errorCard}`}>
+          <p>⚠️ {error}</p>
+          <div style={{ display: 'flex', gap: 'var(--space-md)', marginTop: 'var(--space-md)' }}>
+            <button className="btn btn-primary btn-sm" onClick={() => activeContext && generatePlaylist(activeContext, true)}>
+              Try Again
+            </button>
+            <button className="btn btn-ghost btn-sm" onClick={() => { setActiveContext(null); setError(''); }}>
+              Choose Different Context
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Playlist Result */}
+      {playlist && !isGenerating && (
+        <div className={styles.playlistResult}>
+          {/* Header */}
+          <div className={styles.playlistHeader}>
+            <button className="btn btn-ghost btn-sm" onClick={() => { setActiveContext(null); setPlaylist(null); }}>
+              ← Back to contexts
+            </button>
+            <div className={styles.playlistMeta}>
+              <h2 className="heading-md">{playlist.name}</h2>
+              <p className="text-secondary" style={{ marginTop: 'var(--space-sm)', lineHeight: 1.6 }}>
+                {playlist.description}
+              </p>
+              {playlist.fromCache && (
+                <span className="tag tag-teal" style={{ marginTop: 'var(--space-sm)' }}>
+                  📦 Cached • Force regenerate for fresh picks
+                </span>
+              )}
+            </div>
+            <div className={styles.playlistActions} style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end' }}>
+              <button
+                className="btn btn-secondary btn-sm"
+                onClick={() => activeContext && generatePlaylist(activeContext, true)}
+                disabled={isExporting}
+              >
+                🔄 Regenerate
+              </button>
+              
+              {!exportUrl ? (
+                <button 
+                  className="btn btn-primary btn-sm" 
+                  onClick={exportToYTMusic} 
+                  disabled={isExporting}
+                  style={{ background: 'var(--youtube-red)', border: 'none' }}
+                >
+                  {isExporting ? '⏳ Exporting...' : '▶️ Export to YT Music'}
+                </button>
+              ) : (
+                <a href={exportUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-sm" style={{ background: 'var(--spotify-green)', border: 'none' }}>
+                  🎉 View on YouTube Music
+                </a>
+              )}
+              {exportError && <span style={{ color: 'var(--error-red)', fontSize: '12px' }}>{exportError}</span>}
+            </div>
+          </div>
+
+          {/* Track List */}
+          <div className={styles.trackList}>
+            {playlist.tracks.map((track, i) => (
+              <div key={i} className={`card ${styles.trackCard}`}>
+                <div className={styles.trackNumber}>{String(i + 1).padStart(2, '0')}</div>
+                <div className={styles.trackMain}>
+                  <div className={styles.trackDetails}>
+                    <span className={styles.trackTitle}>{track.name}</span>
+                    <span className={styles.trackArtist}>{track.artist}</span>
+                  </div>
+                  {track.reason && (
+                    <p className={styles.trackReason}>
+                      &ldquo;{track.reason}&rdquo;
+                    </p>
+                  )}
+                  {/* Platform links */}
+                  <div className="platform-links">
+                    {Object.entries(track.platformLinks || {}).map(([platform, url]) => {
+                      if (!url) return null;
+                      const info = PLATFORM_INFO[platform];
+                      if (!info) return null;
+                      return (
+                        <a
+                          key={platform}
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`platform-link ${info.className}`}
+                        >
+                          <span style={{ color: info.color }}>{info.label}</span>
+                        </a>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Track Feedback Section */}
+                  <div style={{ marginTop: 'var(--space-md)', paddingTop: 'var(--space-sm)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)', alignSelf: 'center', marginRight: '8px' }}>Feedback:</span>
+                    {[
+                      { id: 'wow_so_good', label: '🤯 Wow, so good' },
+                      { id: 'nailed_it', label: '🎯 Nailed it' },
+                      { id: 'already_have', label: '🔄 Already have this' },
+                      { id: 'failed_it', label: '❌ Failed it' },
+                    ].map(btn => {
+                      const isActive = feedbacks[`${track.name}::${track.artist}`] === btn.id;
+                      return (
+                        <button
+                          key={btn.id}
+                          onClick={() => handleFeedback(track, btn.id)}
+                          style={{
+                            background: isActive ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.05)',
+                            border: isActive ? '1px solid rgba(255,255,255,0.3)' : '1px solid transparent',
+                            color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+                            padding: '4px 8px',
+                            borderRadius: '12px',
+                            fontSize: '12px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          {btn.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function PlaylistsPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 400 }}>
+        <div className="spinner spinner-lg" />
+      </div>
+    }>
+      <PlaylistsContent />
+    </Suspense>
+  );
+}
