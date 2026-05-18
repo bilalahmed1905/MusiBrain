@@ -42,6 +42,7 @@ export default function InterviewPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState('');
+  const [isResetting, setIsResetting] = useState(false);
 
   useEffect(() => {
     fetch('/api/auth')
@@ -177,6 +178,29 @@ export default function InterviewPage() {
     }
   };
 
+  const resetInterview = async () => {
+    const confirmed = window.confirm('This will erase your favourites and taste profile. Continue?');
+    if (!confirmed) return;
+
+    setIsResetting(true);
+    setError('');
+    try {
+      const res = await fetch('/api/reset', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Failed to reset interview data');
+        return;
+      }
+      setFavourites([]);
+      setActiveTrack(null);
+      router.push('/dashboard/interview');
+    } catch {
+      setError('Failed to reset interview data');
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   const toggleTag = (tag: string) => {
     if (!activeTrack) return;
     const tags = activeTrack.tags.includes(tag)
@@ -205,6 +229,11 @@ export default function InterviewPage() {
         <div className={styles.progressInfo}>
           <span>{finalizedCount}/5+ songs answered</span>
           <span className="text-muted">{favourites.length} selected</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-sm)' }}>
+          <button className="btn btn-ghost btn-sm" onClick={resetInterview} disabled={isResetting}>
+            {isResetting ? 'Resetting...' : 'Restart Interview'}
+          </button>
         </div>
         <div className="progress-bar">
           <div className="progress-fill" style={{ width: `${progress}%` }} />

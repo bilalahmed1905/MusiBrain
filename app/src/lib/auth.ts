@@ -18,7 +18,7 @@ function getProfileImage(user: User): string | null {
 }
 
 export async function getServerUser() {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.getUser();
   if (error) {
     return { user: null, error };
@@ -36,18 +36,33 @@ export async function requireUserId() {
 export async function ensureDbUser(user: User) {
   const displayName = getDisplayName(user);
   const profileImage = getProfileImage(user);
+  const email = user.email || null;
 
-  return prisma.user.upsert({
-    where: { id: user.id },
-    update: {
-      displayName,
-      email: user.email || null,
-      profileImage,
-    },
-    create: {
+  let safeEmail: string | null = email;
+  if (email) {
+    const existingByEmail = await prisma.user.findFirst({ where: { email } });
+    if (existingByEmail && existingByEmail.id !== user.id) {
+      safeEmail = null;
+    }
+  }
+
+  const existingById = await prisma.user.findUnique({ where: { id: user.id } });
+  if (existingById) {
+    return prisma.user.update({
+      where: { id: user.id },
+      data: {
+        displayName,
+        ...(safeEmail ? { email: safeEmail } : {}),
+        profileImage,
+      },
+    });
+  }
+
+  return prisma.user.create({
+    data: {
       id: user.id,
       displayName,
-      email: user.email || null,
+      email: safeEmail,
       profileImage,
     },
   });

@@ -53,6 +53,7 @@ function PlaylistsContent() {
   const searchParams = useSearchParams();
   const [activeContext, setActiveContext] = useState<string | null>(null);
   const [playlist, setPlaylist] = useState<Playlist | null>(null);
+  const [savedPlaylists, setSavedPlaylists] = useState<Playlist[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState('');
   const [hasProfile, setHasProfile] = useState(false);
@@ -63,6 +64,10 @@ function PlaylistsContent() {
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState('');
   const [exportUrl, setExportUrl] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [showRename, setShowRename] = useState(false);
+  const [renameName, setRenameName] = useState('');
+  const [renameError, setRenameError] = useState('');
 
   useEffect(() => {
     fetch('/api/auth')
@@ -70,6 +75,7 @@ function PlaylistsContent() {
       .then(data => {
         if (data.user) {
           checkProfile();
+          loadSavedPlaylists();
         } else {
           setLoadingProfile(false);
         }
@@ -88,6 +94,14 @@ function PlaylistsContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeContext, hasProfile]);
 
+  useEffect(() => {
+    if (playlist) {
+      setRenameName(playlist.name);
+      setShowRename(false);
+      setRenameError('');
+    }
+  }, [playlist]);
+
   const checkProfile = async () => {
     try {
       const res = await fetch('/api/taste-profile');
@@ -95,6 +109,16 @@ function PlaylistsContent() {
       setHasProfile(!!data.profile);
     } finally {
       setLoadingProfile(false);
+    }
+  };
+
+  const loadSavedPlaylists = async () => {
+    try {
+      const res = await fetch('/api/playlists');
+      const data = await res.json();
+      setSavedPlaylists(data.playlists || []);
+    } catch {
+      setSavedPlaylists([]);
     }
   };
 
@@ -117,6 +141,7 @@ function PlaylistsContent() {
         setPlaylist(data.playlist);
         setExportUrl(null); // Reset export url
         setExportError('');
+        loadSavedPlaylists();
       }
     } catch {
       setError('Failed to generate playlist. Please try again.');
@@ -143,6 +168,46 @@ function PlaylistsContent() {
     } finally {
       setIsExporting(false);
     }
+  };
+
+  const savePlaylistName = async () => {
+    if (!playlist) return;
+    const trimmed = renameName.trim();
+    if (!trimmed) {
+      setRenameError('Playlist name cannot be empty.');
+      return;
+    }
+
+    setIsSaving(true);
+    setRenameError('');
+    try {
+      const res = await fetch('/api/playlists', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playlistId: playlist.id, name: trimmed }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setRenameError(data.error || 'Failed to rename playlist');
+        return;
+      }
+
+      setPlaylist(data.playlist);
+      setShowRename(false);
+      loadSavedPlaylists();
+    } catch {
+      setRenameError('Failed to rename playlist');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const openSavedPlaylist = (saved: Playlist) => {
+    setPlaylist(saved);
+    setActiveContext(null);
+    setExportUrl(null);
+    setExportError('');
   };
 
   const handleFeedback = async (track: PlaylistTrack, type: string) => {
@@ -201,20 +266,43 @@ function PlaylistsContent() {
 
       {/* Context Selection */}
       {!activeContext && (
-        <div className={styles.contextsGrid}>
-          {CONTEXTS.map(ctx => (
-            <button
-              key={ctx.id}
-              className={`context-card ${styles.contextBtn}`}
-              style={{ background: ctx.gradient }}
-              onClick={() => setActiveContext(ctx.id)}
-            >
-              <span className="context-icon">{ctx.icon}</span>
-              <span className="context-title">{ctx.title}</span>
-              <span className="context-desc">{ctx.desc}</span>
-            </button>
-          ))}
-        </div>
+        <>
+          <div className={styles.contextsGrid}>
+            {CONTEXTS.map(ctx => (
+              <button
+                key={ctx.id}
+                className={`context-card ${styles.contextBtn}`}
+                style={{ background: ctx.gradient }}
+                onClick={() => setActiveContext(ctx.id)}
+              >
+                <span className="context-icon">{ctx.icon}</span>
+                <span className="context-title">{ctx.title}</span>
+                <span className="context-desc">{ctx.desc}</span>
+              </button>
+            ))}
+          </div>
+
+          {savedPlaylists.length > 0 && (
+            <div className={styles.savedSection}>
+              <h2 className="heading-sm">Saved Playlists</h2>
+              <div className={styles.savedGrid}>
+                {savedPlaylists.map(saved => (
+                  <div key={saved.id} className={`card ${styles.savedCard}`}>
+                    <div className={styles.savedMeta}>
+                      <div className={styles.savedTitle}>{saved.name}</div>
+                      <div className={styles.savedSubtitle}>
+                        {saved.context.replace(/-/g, ' ')} • {new Date(saved.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </div>
+                    </div>
+                    <button className="btn btn-ghost btn-sm" onClick={() => openSavedPlaylist(saved)}>
+                      Open
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Generating State */}
@@ -227,7 +315,7 @@ function PlaylistsContent() {
           </div>
           <h2 className="heading-sm">Building Your Playlist...</h2>
           <p className="text-secondary" style={{ maxWidth: 400, textAlign: 'center', lineHeight: 1.6 }}>
-            Discovering similar tracks, analyzing your taste profile, and curating the perfect mix. This usually takes 15-30 seconds.
+            Discovering similar tracks, analyzing your taste profile, and curating the perfect mix. This usually takes 1-2 minutes.
           </p>
           <div className={styles.generatingSteps}>
             <span className={styles.genStep}>🔍 Finding similar tracks via Last.fm</span>
@@ -279,6 +367,14 @@ function PlaylistsContent() {
               >
                 🔄 Regenerate
               </button>
+
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => setShowRename(prev => !prev)}
+                disabled={isSaving}
+              >
+                💾 Save / Rename
+              </button>
               
               {!exportUrl ? (
                 <button 
@@ -297,6 +393,27 @@ function PlaylistsContent() {
               {exportError && <span style={{ color: 'var(--error-red)', fontSize: '12px' }}>{exportError}</span>}
             </div>
           </div>
+
+          {showRename && (
+            <div className={`card ${styles.renameCard}`}>
+              <div className={styles.renameRow}>
+                <input
+                  className="input"
+                  value={renameName}
+                  onChange={e => setRenameName(e.target.value)}
+                  placeholder="Playlist name"
+                />
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={savePlaylistName}
+                  disabled={isSaving}
+                >
+                  {isSaving ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+              {renameError && <div className={styles.renameError}>{renameError}</div>}
+            </div>
+          )}
 
           {/* Track List */}
           <div className={styles.trackList}>

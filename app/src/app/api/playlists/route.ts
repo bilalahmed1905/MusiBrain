@@ -7,6 +7,19 @@ import { curatePlaylist, getContexts, type CandidateTrack } from '@/lib/groq';
 import { getSongLinks } from '@/lib/odesli';
 import { requireUserId } from '@/lib/auth';
 
+function getRateLimitConfig() {
+  return {
+    enabled: process.env.PLAYLIST_RATE_LIMIT_ENABLED === 'true',
+    maxPerDay: parseInt(process.env.PLAYLIST_RATE_LIMIT_MAX_PER_DAY || '0', 10),
+    maxPerWeek: parseInt(process.env.PLAYLIST_RATE_LIMIT_MAX_PER_WEEK || '0', 10),
+    maxPerHour: parseInt(process.env.PLAYLIST_RATE_LIMIT_MAX_PER_HOUR || '0', 10),
+  };
+}
+
+function buildLimitMessage(unit: string, max: number) {
+  return `Free plan limit reached: ${max} per ${unit}. Please try later.`;
+}
+
 // POST: Generate a playlist for a context
 export async function POST(request: NextRequest) {
   try {
@@ -45,6 +58,49 @@ export async function POST(request: NextRequest) {
             fromCache: true,
           },
         });
+      }
+    }
+
+    const rateLimit = getRateLimitConfig();
+    if (rateLimit.enabled) {
+      const now = new Date();
+      if (rateLimit.maxPerHour > 0) {
+        const hourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+        const count = await prisma.playlist.count({
+          where: { userId, createdAt: { gte: hourAgo } },
+        });
+        if (count >= rateLimit.maxPerHour) {
+          return NextResponse.json(
+            { error: buildLimitMessage('hour', rateLimit.maxPerHour) },
+            { status: 429 }
+          );
+        }
+      }
+
+      if (rateLimit.maxPerDay > 0) {
+        const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        const count = await prisma.playlist.count({
+          where: { userId, createdAt: { gte: dayAgo } },
+        });
+        if (count >= rateLimit.maxPerDay) {
+          return NextResponse.json(
+            { error: buildLimitMessage('day', rateLimit.maxPerDay) },
+            { status: 429 }
+          );
+        }
+      }
+
+      if (rateLimit.maxPerWeek > 0) {
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const count = await prisma.playlist.count({
+          where: { userId, createdAt: { gte: weekAgo } },
+        });
+        if (count >= rateLimit.maxPerWeek) {
+          return NextResponse.json(
+            { error: buildLimitMessage('week', rateLimit.maxPerWeek) },
+            { status: 429 }
+          );
+        }
       }
     }
 
@@ -199,4 +255,43 @@ export async function GET() {
       tracks: JSON.parse(p.tracks),
     })),
   });
+}
+
+// PUT: Rename a playlist
+export async function PUT(request: NextRequest) {
+  try {
+    const { playlistId, name } = await request.json();
+    const userId = await requireUserId();
+
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    if (!playlistId || !name || !name.trim()) {
+      return NextResponse.json({ error: 'playlistId and name required' }, { status: 400 });
+    }
+
+    const updated = await prisma.playlist.updateMany({
+      where: { id: playlistId, userId },
+      data: { name: name.trim() },
+    });
+
+    if (updated.count === 0) {
+      return NextResponse.json({ error: 'Playlist not found' }, { status: 404 });
+    }
+
+    const playlist = await prisma.playlist.findUnique({ where: { id: playlistId } });
+    if (!playlist) {
+      return NextResponse.json({ error: 'Playlist not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      playlist: {
+        ...playlist,
+        tracks: JSON.parse(playlist.tracks),
+      },
+    });
+  } catch (error) {
+    console.error('Playlist rename error:', error);
+    return NextResponse.json({ error: 'Failed to rename playlist' }, { status: 500 });
+  }
 }

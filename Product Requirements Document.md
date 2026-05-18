@@ -261,4 +261,5 @@ For internal use in the agent’s prompts (illustrative, not exhaustive):
 * Should users be able to mark individual generated tracks as “nailed it” or “miss” to further refine the taste brain?   
 * How could MusiBrain support multiple distinct “taste modes” (e.g., “indie me” vs “EDM me”) per user in later versions?  
 * Will there be future integration for Apple Music or Amazon Music?
+* How should the evolving taste brain work: update the profile using playlist feedback plus user-written notes about why tracks did or did not hit?
 
