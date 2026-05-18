@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
+import { requireUserId } from '@/lib/auth';
 
 // POST: Add feedback for a track
 export async function POST(request: NextRequest) {
   try {
-    const { userId, trackId, trackName, artistName, feedbackType } = await request.json();
+    const { trackId, trackName, artistName, feedbackType } = await request.json();
+    const userId = await requireUserId();
 
-    if (!userId || !trackId || !feedbackType) {
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!trackId || !feedbackType) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -46,11 +52,10 @@ export async function POST(request: NextRequest) {
 }
 
 // GET: Get feedback for tracks
-export async function GET(request: NextRequest) {
-  const userId = request.nextUrl.searchParams.get('userId');
-  
+export async function GET() {
+  const userId = await requireUserId();
   if (!userId) {
-    return NextResponse.json({ error: 'userId required' }, { status: 400 });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const feedbacks = await prisma.trackFeedback.findMany({

@@ -1,37 +1,53 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useMemo, useState } from 'react';
 import styles from './page.module.css';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 
 export default function LandingPage() {
-  const router = useRouter();
-  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState<'google' | 'email' | null>(null);
+  const [authMessage, setAuthMessage] = useState('');
   const [showLogin, setShowLogin] = useState(false);
 
-  const handleStart = async () => {
-    if (!name.trim()) return;
-    setIsLoading(true);
+  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
 
-    try {
-      const res = await fetch('/api/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ displayName: name.trim(), email: email.trim() || undefined }),
-      });
+  const handleGoogleLogin = async () => {
+    setIsLoading('google');
+    setAuthMessage('');
 
-      const data = await res.json();
-      if (data.user) {
-        localStorage.setItem('musibrain_user', JSON.stringify(data.user));
-        router.push('/dashboard');
-      }
-    } catch (err) {
-      console.error('Login error:', err);
-    } finally {
-      setIsLoading(false);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+
+    if (error) {
+      setAuthMessage(error.message);
+      setIsLoading(null);
     }
+  };
+
+  const handleEmailLogin = async () => {
+    if (!email.trim()) return;
+    setIsLoading('email');
+    setAuthMessage('');
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email: email.trim(),
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+
+    if (error) {
+      setAuthMessage(error.message);
+    } else {
+      setAuthMessage('Check your email for a magic link to finish signing in.');
+    }
+
+    setIsLoading(null);
   };
 
   return (
@@ -151,46 +167,52 @@ export default function LandingPage() {
               Welcome to <span className="text-gradient">MusiBrain</span>
             </h2>
             <p className="text-secondary" style={{ marginBottom: 'var(--space-xl)', fontSize: 'var(--text-sm)' }}>
-              Enter your name to start building your taste brain. No sign-up required.
+              Sign in to save your taste brain and playlists across devices.
             </p>
-            
-            <div className={styles.formGroup}>
-              <label className={styles.label}>Your Name</label>
-              <input
-                className="input"
-                type="text"
-                placeholder="What should we call you?"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleStart()}
-                autoFocus
-              />
-            </div>
-            
-            <div className={styles.formGroup}>
-              <label className={styles.label}>Email <span className="text-muted">(optional, for saving progress)</span></label>
-              <input
-                className="input"
-                type="email"
-                placeholder="your@email.com"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleStart()}
-              />
-            </div>
 
             <button
               className="btn btn-primary btn-lg"
               style={{ width: '100%', marginTop: 'var(--space-md)' }}
-              onClick={handleStart}
-              disabled={!name.trim() || isLoading}
+              onClick={handleGoogleLogin}
+              disabled={isLoading !== null}
             >
-              {isLoading ? (
-                <><div className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> Setting up...</>
+              {isLoading === 'google' ? (
+                <><div className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> Redirecting...</>
               ) : (
-                <>Start My Taste Interview →</>
+                <>Continue with Google →</>
               )}
             </button>
+
+            <div className={styles.formGroup} style={{ marginTop: 'var(--space-lg)' }}>
+              <label className={styles.label}>Email Magic Link</label>
+              <input
+                className="input"
+                type="email"
+                placeholder="you@email.com"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleEmailLogin()}
+              />
+            </div>
+
+            <button
+              className="btn btn-ghost btn-lg"
+              style={{ width: '100%', marginTop: 'var(--space-md)' }}
+              onClick={handleEmailLogin}
+              disabled={!email.trim() || isLoading !== null}
+            >
+              {isLoading === 'email' ? (
+                <><div className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> Sending link...</>
+              ) : (
+                <>Email me a magic link →</>
+              )}
+            </button>
+
+            {authMessage && (
+              <p className="text-secondary" style={{ marginTop: 'var(--space-md)', fontSize: 'var(--text-sm)' }}>
+                {authMessage}
+              </p>
+            )}
           </div>
         </div>
       )}

@@ -2,14 +2,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { generateTasteProfile } from '@/lib/groq';
+import { requireUserId } from '@/lib/auth';
 
 // POST: Generate taste profile from favourites
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await request.json();
-    
+    const userId = await requireUserId();
     if (!userId) {
-      return NextResponse.json({ error: 'userId required' }, { status: 400 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Get user's favourites
@@ -76,11 +76,10 @@ export async function POST(request: NextRequest) {
 }
 
 // GET: Retrieve existing taste profile
-export async function GET(request: NextRequest) {
-  const userId = request.nextUrl.searchParams.get('userId');
-  
+export async function GET() {
+  const userId = await requireUserId();
   if (!userId) {
-    return NextResponse.json({ error: 'userId required' }, { status: 400 });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const profile = await prisma.tasteProfile.findUnique({
@@ -104,10 +103,10 @@ export async function GET(request: NextRequest) {
 // PUT: Update taste profile (tag toggles, intensity changes)
 export async function PUT(request: NextRequest) {
   try {
-    const { userId, semanticTags, moods, tagIntensities, summaryText } = await request.json();
-    
+    const { semanticTags, moods, tagIntensities, summaryText } = await request.json();
+    const userId = await requireUserId();
     if (!userId) {
-      return NextResponse.json({ error: 'userId required' }, { status: 400 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const updateData: Record<string, unknown> = { lastUpdated: new Date() };

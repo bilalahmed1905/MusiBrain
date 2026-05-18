@@ -15,23 +15,23 @@ interface TasteProfile {
 export default function ProfilePage() {
   const [profile, setProfile] = useState<TasteProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState('');
   const [editingSummary, setEditingSummary] = useState(false);
   const [summaryDraft, setSummaryDraft] = useState('');
 
   useEffect(() => {
-    const stored = localStorage.getItem('musibrain_user');
-    if (stored) {
-      const u = JSON.parse(stored);
-      setUserId(u.id);
-      loadProfile(u.id);
-    }
+    fetch('/api/auth')
+      .then(r => r.json())
+      .then(data => {
+        if (data.user) {
+          loadProfile();
+        }
+      });
   }, []);
 
-  const loadProfile = async (uid: string) => {
+  const loadProfile = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/taste-profile?userId=${uid}`);
+      const res = await fetch('/api/taste-profile');
       const data = await res.json();
       setProfile(data.profile);
     } finally {
@@ -53,7 +53,7 @@ export default function ProfilePage() {
     await fetch('/api/taste-profile', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, semanticTags: newTags, tagIntensities: newIntensities }),
+      body: JSON.stringify({ semanticTags: newTags, tagIntensities: newIntensities }),
     });
 
     setProfile({ ...profile, semanticTags: newTags, tagIntensities: newIntensities });
@@ -63,7 +63,7 @@ export default function ProfilePage() {
     await fetch('/api/taste-profile', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, summaryText: summaryDraft }),
+      body: JSON.stringify({ summaryText: summaryDraft }),
     });
     setProfile(prev => prev ? { ...prev, summaryText: summaryDraft } : null);
     setEditingSummary(false);

@@ -5,14 +5,19 @@ import prisma from '@/lib/db';
 import { getSimilarTracks, getSimilarArtists, getArtistTopTracks, getTrackInfo } from '@/lib/lastfm';
 import { curatePlaylist, getContexts, type CandidateTrack } from '@/lib/groq';
 import { getSongLinks } from '@/lib/odesli';
+import { requireUserId } from '@/lib/auth';
 
 // POST: Generate a playlist for a context
 export async function POST(request: NextRequest) {
   try {
-    const { userId, context, forceRegenerate } = await request.json();
+    const { context, forceRegenerate } = await request.json();
 
-    if (!userId || !context) {
-      return NextResponse.json({ error: 'userId and context required' }, { status: 400 });
+    const userId = await requireUserId();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    if (!context) {
+      return NextResponse.json({ error: 'context required' }, { status: 400 });
     }
 
     // Validate context
@@ -177,11 +182,10 @@ export async function POST(request: NextRequest) {
 }
 
 // GET: Get user's playlists
-export async function GET(request: NextRequest) {
-  const userId = request.nextUrl.searchParams.get('userId');
-  
+export async function GET() {
+  const userId = await requireUserId();
   if (!userId) {
-    return NextResponse.json({ error: 'userId required' }, { status: 400 });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const playlists = await prisma.playlist.findMany({

@@ -14,20 +14,22 @@ export default function DashboardPage() {
   const [stats, setStats] = useState({ favourites: 0, hasProfile: false, playlists: 0 });
 
   useEffect(() => {
-    const stored = localStorage.getItem('musibrain_user');
-    if (stored) {
-      const u = JSON.parse(stored);
-      setUser(u);
-      loadStats(u.id);
-    }
+    fetch('/api/auth')
+      .then(r => r.json())
+      .then(data => {
+        if (data.user) {
+          setUser(data.user);
+          loadStats();
+        }
+      });
   }, []);
 
-  const loadStats = async (userId: string) => {
+  const loadStats = async () => {
     try {
       const [favRes, profileRes, playlistRes] = await Promise.all([
-        fetch(`/api/favourites?userId=${userId}`),
-        fetch(`/api/taste-profile?userId=${userId}`),
-        fetch(`/api/playlists?userId=${userId}`),
+        fetch('/api/favourites'),
+        fetch('/api/taste-profile'),
+        fetch('/api/playlists'),
       ]);
       const [favData, profileData, playlistData] = await Promise.all([
         favRes.json(),

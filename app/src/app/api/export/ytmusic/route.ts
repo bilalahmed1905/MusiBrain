@@ -1,14 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
+import { requireUserId } from '@/lib/auth';
 
 const YTMUSIC_SERVICE_URL = process.env.YTMUSIC_SERVICE_URL || 'http://localhost:8000';
 
 export async function POST(request: NextRequest) {
   try {
-    const { playlistId, userId } = await request.json();
+    const { playlistId } = await request.json();
+    const userId = await requireUserId();
 
-    if (!playlistId || !userId) {
-      return NextResponse.json({ error: 'Missing playlistId or userId' }, { status: 400 });
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    if (!playlistId) {
+      return NextResponse.json({ error: 'Missing playlistId' }, { status: 400 });
     }
 
     // 1. Get the playlist from the database

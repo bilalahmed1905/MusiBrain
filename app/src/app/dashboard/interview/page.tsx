@@ -34,7 +34,6 @@ const AVAILABLE_TAGS = [
 
 export default function InterviewPage() {
   const router = useRouter();
-  const [user, setUser] = useState<{ id: string } | null>(null);
   const [favourites, setFavourites] = useState<Favourite[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -45,16 +44,19 @@ export default function InterviewPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const stored = localStorage.getItem('musibrain_user');
-    if (stored) {
-      const u = JSON.parse(stored);
-      setUser(u);
-      loadFavourites(u.id);
-    }
+    fetch('/api/auth')
+      .then(r => r.json())
+      .then(data => {
+        if (data.user) {
+          loadFavourites();
+        } else {
+          router.push('/');
+        }
+      });
   }, []);
 
-  const loadFavourites = async (userId: string) => {
-    const res = await fetch(`/api/favourites?userId=${userId}`);
+  const loadFavourites = async () => {
+    const res = await fetch('/api/favourites');
     const data = await res.json();
     setFavourites(data.favourites || []);
   };
@@ -85,7 +87,6 @@ export default function InterviewPage() {
   }, [searchQuery, searchTracks]);
 
   const addFavourite = async (track: SearchResult) => {
-    if (!user) return;
     if (favourites.length >= 10) {
       setError('Maximum 10 favourites allowed');
       return;
@@ -96,7 +97,6 @@ export default function InterviewPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: user.id,
           trackName: track.name,
           artistName: track.artist,
           albumName: track.album || '',
@@ -150,7 +150,6 @@ export default function InterviewPage() {
   };
 
   const generateProfile = async () => {
-    if (!user) return;
     const finalized = favourites.filter(f => f.isFinalized);
     if (finalized.length < 5) {
       setError('Answer questions for at least 5 songs before generating your profile');
@@ -163,7 +162,7 @@ export default function InterviewPage() {
       const res = await fetch('/api/taste-profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id }),
+        body: JSON.stringify({}),
       });
       const data = await res.json();
       if (data.error) {

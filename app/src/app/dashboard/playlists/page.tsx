@@ -51,7 +51,6 @@ const PLATFORM_INFO: Record<string, { label: string; color: string; className: s
 
 function PlaylistsContent() {
   const searchParams = useSearchParams();
-  const [userId, setUserId] = useState('');
   const [activeContext, setActiveContext] = useState<string | null>(null);
   const [playlist, setPlaylist] = useState<Playlist | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -66,12 +65,15 @@ function PlaylistsContent() {
   const [exportUrl, setExportUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    const stored = localStorage.getItem('musibrain_user');
-    if (stored) {
-      const u = JSON.parse(stored);
-      setUserId(u.id);
-      checkProfile(u.id);
-    }
+    fetch('/api/auth')
+      .then(r => r.json())
+      .then(data => {
+        if (data.user) {
+          checkProfile();
+        } else {
+          setLoadingProfile(false);
+        }
+      });
 
     const contextParam = searchParams.get('context');
     if (contextParam) {
@@ -80,15 +82,15 @@ function PlaylistsContent() {
   }, [searchParams]);
 
   useEffect(() => {
-    if (activeContext && userId && hasProfile) {
+    if (activeContext && hasProfile) {
       generatePlaylist(activeContext);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeContext, userId, hasProfile]);
+  }, [activeContext, hasProfile]);
 
-  const checkProfile = async (uid: string) => {
+  const checkProfile = async () => {
     try {
-      const res = await fetch(`/api/taste-profile?userId=${uid}`);
+      const res = await fetch('/api/taste-profile');
       const data = await res.json();
       setHasProfile(!!data.profile);
     } finally {
@@ -105,7 +107,7 @@ function PlaylistsContent() {
       const res = await fetch('/api/playlists', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, context, forceRegenerate }),
+        body: JSON.stringify({ context, forceRegenerate }),
       });
 
       const data = await res.json();
@@ -124,14 +126,14 @@ function PlaylistsContent() {
   };
 
   const exportToYTMusic = async () => {
-    if (!playlist || !userId) return;
+    if (!playlist) return;
     setIsExporting(true);
     setExportError('');
     try {
       const res = await fetch('/api/export/ytmusic', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playlistId: playlist.id, userId }),
+        body: JSON.stringify({ playlistId: playlist.id }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Export failed');
@@ -152,7 +154,6 @@ function PlaylistsContent() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId,
           trackId: trackKey,
           trackName: track.name,
           artistName: track.artist,

@@ -23,23 +23,16 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    // Check for user in localStorage first for instant render
-    const stored = localStorage.getItem('musibrain_user');
-    if (stored) {
-      setUser(JSON.parse(stored));
-    } else {
-      // Verify session
-      fetch('/api/auth')
-        .then(r => r.json())
-        .then(data => {
-          if (data.user) {
-            setUser(data.user);
-            localStorage.setItem('musibrain_user', JSON.stringify(data.user));
-          } else {
-            router.push('/');
-          }
-        });
-    }
+    // Verify session via Supabase-backed API
+    fetch('/api/auth')
+      .then(r => r.json())
+      .then(data => {
+        if (data.user) {
+          setUser(data.user);
+        } else {
+          router.push('/');
+        }
+      });
   }, [router]);
 
   const navItems = [
