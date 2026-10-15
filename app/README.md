@@ -1,36 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🧠 MusiBrain Web App (`/app`)
 
-## Getting Started
+The full-stack Next.js web application powering MusiBrain.
 
-First, run the development server:
+---
+
+## 🛠️ Stack & Architecture
+
+- **Framework**: [Next.js 16](https://nextjs.org) (App Router, Turbopack, React 19)
+- **Database & ORM**: [Prisma ORM](https://www.prisma.io) with dual support:
+  - **Local SQLite** (`prisma/dev.db`): Zero-setup offline database
+  - **Supabase PostgreSQL**: Cloud database with connection pooling
+- **AI / LLM Engine**: [Groq SDK](https://groq.com) (`openai/gpt-oss-120b` or custom `GROQ_MODEL`)
+- **Music APIs**:
+  - [Last.fm](https://www.last.fm/api): Track search, artist top tags, similar track vectors, and album artwork
+  - [Odesli (Songlink)](https://odesli.co): Universal cross-platform links (Spotify, Apple Music, YouTube Music, Tidal, Deezer, Amazon Music)
+- **Styling**: Vanilla CSS Modules with custom Dark-Mode design tokens (`globals.css`)
+
+---
+
+## 🚦 Quick Commands
+
+| Command | Description |
+|---|---|
+| `npm run dev` | Start Next.js development server on `localhost:3000` |
+| `npm run build` | Build optimized production bundle with TypeScript check |
+| `npm run start` | Start production server |
+| `npm run lint` | Run ESLint |
+| `npm run db:local` | Switch Prisma schema to local SQLite and regenerate client |
+| `npm run db:supabase` | Switch Prisma schema to Supabase PostgreSQL and regenerate client |
+
+---
+
+## 🔑 Environment Variables
+
+Copy `.env.example` to `.env.local`:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env.local
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Essential Keys:
+```env
+# Groq LLM API
+GROQ_API_KEY=gsk_...
+GROQ_MODEL=openai/gpt-oss-120b
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+# Last.fm API
+LASTFM_API_KEY=...
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Database (Default: local SQLite)
+DATABASE_URL="file:./dev.db"
 
-## Learn More
+# Local Auth Fallback
+NEXT_PUBLIC_LOCAL_MODE=true
+```
 
-To learn more about Next.js, take a look at the following resources:
+### Optional Supabase Cloud Keys:
+```env
+DATABASE_URL="postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1"
+DIRECT_URL="postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:5432/postgres"
+NEXT_PUBLIC_SUPABASE_URL="https://[ref].supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="your_anon_key"
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 📂 Directory Map
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+app/
+├── prisma/
+│   ├── schema.prisma        # Database schema
+│   ├── migrations/          # Schema migrations
+│   └── dev.db               # Local SQLite database
+├── scripts/
+│   └── switch-db.js         # Automated provider switch script
+├── src/
+│   ├── app/
+│   │   ├── page.tsx         # Landing page & auth modal
+│   │   ├── dashboard/       # Dashboard, taste interview, profile, playlists
+│   │   ├── api/
+│   │   │   ├── auth/        # Auth sync & local dev login/logout
+│   │   │   ├── favourites/  # Song interview favourites CRUD
+│   │   │   ├── taste-profile/# LLM taste brain generation & updates
+│   │   │   ├── playlists/   # Playlist generation & curation
+│   │   │   ├── search/      # Last.fm song search
+│   │   │   ├── reset/       # Interview reset
+│   │   │   └── export/      # YouTube Music microservice export
+│   │   └── auth/callback/   # Supabase OAuth redirect handler
+│   └── lib/                 # Service integrations (groq, lastfm, odesli, auth, db)
+├── .env.example
+└── package.json
+```

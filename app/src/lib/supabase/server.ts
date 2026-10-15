@@ -6,21 +6,29 @@ export async function createSupabaseServerClient() {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !anonKey) {
-    throw new Error('Supabase env vars are missing. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.');
+    return null;
   }
 
   const cookieStore = await cookies();
 
   return createServerClient(url, anonKey, {
     cookies: {
-      get(name) {
+      get(name: string) {
         return cookieStore.get(name)?.value;
       },
-      set(name, value, options) {
-        cookieStore.set({ name, value, ...options });
+      set(name: string, value: string, options?: Record<string, unknown>) {
+        try {
+          cookieStore.set({ name, value, ...(options as any) });
+        } catch {
+          // Can fail if called from a Server Component; safe to ignore
+        }
       },
-      remove(name, options) {
-        cookieStore.set({ name, value: '', ...options, maxAge: 0 });
+      remove(name: string, options?: Record<string, unknown>) {
+        try {
+          cookieStore.set({ name, value: '', ...(options as any), maxAge: 0 });
+        } catch {
+          // Can fail if called from a Server Component; safe to ignore
+        }
       },
     },
   });

@@ -16,7 +16,7 @@ function getGroq(): Groq {
   return groqClient;
 }
 
-const MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct';
+const MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
 
 interface FavouriteInput {
   trackName: string;

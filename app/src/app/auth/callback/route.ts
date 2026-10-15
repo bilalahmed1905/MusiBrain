@@ -9,10 +9,14 @@ export async function GET(request: NextRequest) {
   if (code) {
     try {
       const supabase = await createSupabaseServerClient();
-      const { error } = await supabase.auth.exchangeCodeForSession(code);
-      if (error) {
-        console.error('Supabase auth exchange error:', error);
+      if (!supabase) {
         redirectUrl = new URL('/?auth=error', request.url);
+      } else {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) {
+          console.error('Supabase auth exchange error:', error);
+          redirectUrl = new URL('/?auth=error', request.url);
+        }
       }
     } catch (err) {
       console.error('Supabase auth callback error:', err);

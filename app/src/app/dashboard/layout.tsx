@@ -23,7 +23,7 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    // Verify session via Supabase-backed API
+    // Verify session via auth API
     fetch('/api/auth')
       .then(r => r.json())
       .then(data => {
@@ -32,8 +32,20 @@ export default function DashboardLayout({
         } else {
           router.push('/');
         }
+      })
+      .catch(() => {
+        router.push('/');
       });
   }, [router]);
+
+  const handleSignOut = async () => {
+    try {
+      await fetch('/api/auth/local', { method: 'DELETE' });
+    } catch {
+      // ignore
+    }
+    window.location.href = '/';
+  };
 
   const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: '🏠' },
@@ -88,12 +100,28 @@ export default function DashboardLayout({
         {/* User info at bottom */}
         <div className={styles.userCard}>
           <div className={styles.userAvatar}>
-            {user.displayName.charAt(0).toUpperCase()}
+            {user.profileImage ? (
+              <img 
+                src={user.profileImage} 
+                alt={user.displayName}
+                style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+              />
+            ) : (
+              user.displayName.charAt(0).toUpperCase()
+            )}
           </div>
-          <div className={styles.userInfo}>
+          <div className={styles.userInfo} style={{ flex: 1 }}>
             <div className={styles.userName}>{user.displayName}</div>
             <div className={styles.userEmail}>{user.email || 'Music lover'}</div>
           </div>
+          <button 
+            className="btn btn-ghost" 
+            style={{ padding: '4px 8px', fontSize: '12px' }}
+            onClick={handleSignOut}
+            title="Sign out"
+          >
+            Log out
+          </button>
         </div>
       </aside>
 

@@ -1,6 +1,38 @@
 import prisma from '@/lib/db';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
 import type { User } from '@supabase/supabase-js';
+
+export const LOCAL_SESSION_COOKIE = 'musibrain_local_session';
+
+// Fallback default user if dev.db has no users
+const DEFAULT_LOCAL_USER = {
+  id: '23643bf4-3ba4-494f-96ae-154ad75892fd',
+  displayName: 'Bilal Ahmed',
+  email: 'bilalahmed1905@gmail.com',
+  profileImage: 'https://lh3.googleusercontent.com/a/ACg8ocLnhzj2HyRe_PeDYmj7YivWu2ET5vTdZUgrB9AAQDOl6Nwl7HZn=s96-c',
+};
+
+export async function getLocalUser() {
+  try {
+    const existing = await prisma.user.findFirst({
+      where: { id: DEFAULT_LOCAL_USER.id },
+    });
+    if (existing) return existing;
+
+    const anyUser = await prisma.user.findFirst({
+      orderBy: { updatedAt: 'desc' },
+    });
+    if (anyUser) return anyUser;
+
+    return await prisma.user.create({
+      data: DEFAULT_LOCAL_USER,
+    });
+  } catch (err) {
+    console.error('Error fetching local fallback user:', err);
+    return DEFAULT_LOCAL_USER;
+  }
+}
 
 function getDisplayName(user: User): string {
   const metadata = user.user_metadata || {};
@@ -18,12 +50,47 @@ function getProfileImage(user: User): string | null {
 }
 
 export async function getServerUser() {
-  const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.auth.getUser();
-  if (error) {
-    return { user: null, error };
+  // 1. Check if user is logged into local session
+  try {
+    const cookieStore = await cookies();
+    const hasLocalSession = cookieStore.get(LOCAL_SESSION_COOKIE)?.value;
+    const isLocalMode = process.env.NEXT_PUBLIC_LOCAL_MODE === 'true';
+
+    if (hasLocalSession === 'true' || isLocalMode) {
+      const localUser = await getLocalUser();
+      const mockSupabaseUser: User = {
+        id: localUser.id,
+        app_metadata: {},
+        user_metadata: {
+          full_name: localUser.displayName,
+          avatar_url: localUser.profileImage,
+        },
+        aud: 'authenticated',
+        created_at: new Date().toISOString(),
+        email: localUser.email || undefined,
+      } as unknown as User;
+
+      return { user: mockSupabaseUser, error: null };
+    }
+  } catch {
+    // cookies() can throw in some build/prerender environments
   }
-  return { user: data.user, error: null };
+
+  // 2. Otherwise try Supabase Server Client
+  try {
+    const supabase = await createSupabaseServerClient();
+    if (!supabase) {
+      return { user: null, error: new Error('Supabase client not configured') };
+    }
+
+    const { data, error } = await supabase.auth.getUser();
+    if (error) {
+      return { user: null, error };
+    }
+    return { user: data.user, error: null };
+  } catch (err) {
+    return { user: null, error: err };
+  }
 }
 
 export async function requireUserId() {
