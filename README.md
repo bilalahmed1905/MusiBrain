@@ -18,9 +18,12 @@ MusiBrain goes beyond surface-level streaming algorithms. By combining direct us
   - 📚 *Studying / Deep Focus* (non-intrusive focus flow)
   - 🔥 *Gym / Workout* (driving rhythmic momentum)
   - 🎉 *Party Mode* (groove-heavy and high energy)
+- 📋 **Easy Playlist Export to Any Platform:** 1-click tracklist copy and instant `.txt` / `.csv` downloads, formatted specifically for free tools like TuneMyMusic, SongShift, and Playlisty to import entire playlists directly into your **Apple Music or Spotify** library in seconds.
+- 🎯 **Fine-Grained Taste Feedback:** Rate recommendations with nuanced feedback (*"Wow, so good"*, *"Nailed it"*, *"Kinda mid / not quite it"*, *"Already have this"*, *"Failed it"*) to dynamically prune future playlist generations.
 - 🔗 **Universal Streaming Links:** Powered by Odesli / Songlink to generate direct links for **Spotify, Apple Music, YouTube Music, Tidal, Deezer, and Amazon Music**.
 - 💾 **Dual-Mode Database (Local SQLite & Supabase):** Run completely offline with local SQLite out of the box, or connect to Supabase Cloud PostgreSQL with a single command.
 - ⚡ **Instant Local & Cloud Auth:** Sign in with Google OAuth / Email Magic Link via Supabase, or use the built-in Local Mode for instant offline development.
+
 
 ---
 
