@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const validFeedbackTypes = ['nailed_it', 'failed_it', 'already_have', 'wow_so_good'];
+    const validFeedbackTypes = ['nailed_it', 'failed_it', 'already_have', 'wow_so_good', 'kinda_mid'];
     if (!validFeedbackTypes.includes(feedbackType)) {
       return NextResponse.json({ error: 'Invalid feedback type' }, { status: 400 });
     }

@@ -125,6 +125,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Exclude tracks user disliked or marked as kinda_mid
+    const userFeedback = await prisma.trackFeedback.findMany({
+      where: {
+        userId,
+        feedbackType: { in: ['failed_it', 'kinda_mid'] },
+      },
+    });
+    const excludedTrackKeys = new Set(userFeedback.map(f => f.trackId.toLowerCase()));
+
     // ═══ STEP 1: Build candidate pool via Last.fm ═══
     const candidates: CandidateTrack[] = [];
     const seenTracks = new Set<string>();
@@ -134,7 +143,7 @@ export async function POST(request: NextRequest) {
       const similar = await getSimilarTracks(fav.artistName, fav.trackName, 15);
       for (const track of similar) {
         const key = `${track.artist}::${track.name}`.toLowerCase();
-        if (!seenTracks.has(key)) {
+        if (!seenTracks.has(key) && !excludedTrackKeys.has(key)) {
           seenTracks.add(key);
           const info = await getTrackInfo(track.artist, track.name);
           candidates.push({

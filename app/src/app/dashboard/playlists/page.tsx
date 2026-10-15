@@ -68,6 +68,8 @@ function PlaylistsContent() {
   const [showRename, setShowRename] = useState(false);
   const [renameName, setRenameName] = useState('');
   const [renameError, setRenameError] = useState('');
+  const [copyStatus, setCopyStatus] = useState<string | null>(null);
+  const [showExportModal, setShowExportModal] = useState(false);
 
   useEffect(() => {
     fetch('/api/auth')
@@ -230,6 +232,42 @@ function PlaylistsContent() {
     }
   };
 
+  const handleCopyTracklist = () => {
+    if (!playlist?.tracks) return;
+    const text = playlist.tracks.map(t => `${t.artist} - ${t.name}`).join('\n');
+    navigator.clipboard.writeText(text);
+    setCopyStatus('Copied!');
+    setShowExportModal(true);
+    setTimeout(() => setCopyStatus(null), 3000);
+  };
+
+  const handleDownloadTxt = () => {
+    if (!playlist?.tracks) return;
+    const text = playlist.tracks.map(t => `${t.artist} - ${t.name}`).join('\n');
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${playlist.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadCsv = () => {
+    if (!playlist?.tracks) return;
+    const header = 'Track Name,Artist Name,Reason\n';
+    const rows = playlist.tracks
+      .map(t => `"${t.name.replace(/"/g, '""')}","${t.artist.replace(/"/g, '""')}","${t.reason.replace(/"/g, '""')}"`)
+      .join('\n');
+    const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${playlist.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (loadingProfile) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 400 }}>
@@ -361,6 +399,15 @@ function PlaylistsContent() {
             </div>
             <div className={styles.playlistActions} style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end' }}>
               <button
+                className="btn btn-primary btn-sm"
+                onClick={handleCopyTracklist}
+                title="Copy tracklist for Apple Music / Spotify"
+                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                {copyStatus ? '✓ Copied to Clipboard!' : '📋 Copy Tracklist (Apple/Spotify)'}
+              </button>
+
+              <button
                 className="btn btn-secondary btn-sm"
                 onClick={() => activeContext && generatePlaylist(activeContext, true)}
                 disabled={isExporting}
@@ -378,10 +425,10 @@ function PlaylistsContent() {
               
               {!exportUrl ? (
                 <button 
-                  className="btn btn-primary btn-sm" 
+                  className="btn btn-ghost btn-sm" 
                   onClick={exportToYTMusic} 
                   disabled={isExporting}
-                  style={{ background: 'var(--youtube-red)', border: 'none' }}
+                  style={{ color: 'var(--youtube-red)' }}
                 >
                   {isExporting ? '⏳ Exporting...' : '▶️ Export to YT Music'}
                 </button>
@@ -393,6 +440,50 @@ function PlaylistsContent() {
               {exportError && <span style={{ color: 'var(--error-red)', fontSize: '12px' }}>{exportError}</span>}
             </div>
           </div>
+
+          {showExportModal && (
+            <div className={`card ${styles.renameCard}`} style={{ borderColor: 'var(--accent)', background: 'rgba(25, 25, 40, 0.95)', padding: '16px', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)' }}>
+                  📋 Tracklist Copied ({playlist.tracks.length} tracks)!
+                </span>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  style={{ padding: '2px 8px' }}
+                  onClick={() => setShowExportModal(false)}
+                >
+                  ✕
+                </button>
+              </div>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '8px 0 12px 0', lineHeight: 1.5 }}>
+                Paste directly into any free converter to put this playlist right into your <strong>Apple Music</strong> or <strong>Spotify</strong> library:
+              </p>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                <a
+                  href="https://www.tunemymusic.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-secondary btn-sm"
+                >
+                  🌐 Open TuneMyMusic (Web) →
+                </a>
+                <a
+                  href="https://songshift.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-ghost btn-sm"
+                >
+                  📱 SongShift (iOS)
+                </a>
+                <button className="btn btn-ghost btn-sm" onClick={handleDownloadTxt}>
+                  📥 Download .txt
+                </button>
+                <button className="btn btn-ghost btn-sm" onClick={handleDownloadCsv}>
+                  📥 Download .csv
+                </button>
+              </div>
+            </div>
+          )}
 
           {showRename && (
             <div className={`card ${styles.renameCard}`}>
@@ -456,6 +547,7 @@ function PlaylistsContent() {
                     {[
                       { id: 'wow_so_good', label: '🤯 Wow, so good' },
                       { id: 'nailed_it', label: '🎯 Nailed it' },
+                      { id: 'kinda_mid', label: '😐 Kinda mid / not quite it' },
                       { id: 'already_have', label: '🔄 Already have this' },
                       { id: 'failed_it', label: '❌ Failed it' },
                     ].map(btn => {
