@@ -1,0 +1,29 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "app": {
+      "root": "app",
+      "framework": "nextjs",
+      "bindings": [
+        {
+          "type": "service",
+          "service": "ytmusic-service",
+          "format": "url",
+          "env": "YTMUSIC_SERVICE_URL"
+        }
+      ]
+    },
+    "ytmusic-service": {
+      "root": "ytmusic-service",
+      "framework": "fastapi"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "app"
+      }
+    }
+  ]
+}

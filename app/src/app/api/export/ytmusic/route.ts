@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { requireUserId } from '@/lib/auth';
 
-const YTMUSIC_SERVICE_URL = process.env.YTMUSIC_SERVICE_URL || 'http://localhost:8000';
+function getYtMusicEndpoint(path: string): string {
+  const base = process.env.YTMUSIC_SERVICE_URL || 'http://localhost:8000';
+  const cleanBase = base.endsWith('/') ? base : `${base}/`;
+  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+  return new URL(cleanPath, cleanBase).toString();
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,7 +38,7 @@ export async function POST(request: NextRequest) {
     for (const track of tracks) {
       try {
         const query = `${track.name} ${track.artist}`;
-        const searchRes = await fetch(`${YTMUSIC_SERVICE_URL}/search`, {
+        const searchRes = await fetch(getYtMusicEndpoint('/search'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ query }),
@@ -55,7 +60,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. Create the playlist on YT Music via the service
-    const createRes = await fetch(`${YTMUSIC_SERVICE_URL}/playlist`, {
+    const createRes = await fetch(getYtMusicEndpoint('/playlist'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
