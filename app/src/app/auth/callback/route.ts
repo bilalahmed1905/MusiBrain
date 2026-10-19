@@ -2,29 +2,36 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export async function GET(request: NextRequest) {
-  const url = new URL(request.url);
-  const code = url.searchParams.get('code');
-  let redirectUrl = new URL('/dashboard', request.url);
+  const requestUrl = new URL(request.url);
+  const code = requestUrl.searchParams.get('code');
+  const errorParam = requestUrl.searchParams.get('error_description') || requestUrl.searchParams.get('error');
+  const forwardedHost = request.headers.get('x-forwarded-host');
+  const origin = forwardedHost ? `https://${forwardedHost}` : requestUrl.origin;
+
+  if (errorParam) {
+    console.error('Supabase auth error param:', errorParam);
+    return NextResponse.redirect(`${origin}/?auth=error&reason=${encodeURIComponent(errorParam)}`);
+  }
 
   if (code) {
     try {
       const supabase = await createSupabaseServerClient();
       if (!supabase) {
-        redirectUrl = new URL('/?auth=error', request.url);
-      } else {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
-        if (error) {
-          console.error('Supabase auth exchange error:', error);
-          redirectUrl = new URL('/?auth=error', request.url);
-        }
+        return NextResponse.redirect(`${origin}/?auth=error&reason=supabase_not_configured`);
       }
-    } catch (err) {
-      console.error('Supabase auth callback error:', err);
-      redirectUrl = new URL('/?auth=error', request.url);
+
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
+      if (error) {
+        console.error('Supabase auth exchange error:', error);
+        return NextResponse.redirect(`${origin}/?auth=error&reason=${encodeURIComponent(error.message)}`);
+      }
+
+      return NextResponse.redirect(`${origin}/dashboard`);
+    } catch (err: any) {
+      console.error('Supabase auth callback exception:', err);
+      return NextResponse.redirect(`${origin}/?auth=error&reason=${encodeURIComponent(err?.message || 'unknown')}`);
     }
-  } else {
-    redirectUrl = new URL('/', request.url);
   }
 
-  return NextResponse.redirect(redirectUrl);
+  return NextResponse.redirect(`${origin}/`);
 }

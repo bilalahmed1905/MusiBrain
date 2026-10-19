@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import styles from './page.module.css';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 
@@ -9,6 +9,22 @@ export default function LandingPage() {
   const [isLoading, setIsLoading] = useState<'google' | 'email' | null>(null);
   const [authMessage, setAuthMessage] = useState('');
   const [showLogin, setShowLogin] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const auth = params.get('auth');
+      const reason = params.get('reason') || params.get('err');
+      if (auth) {
+        setShowLogin(true);
+        if (reason) {
+          setAuthMessage(`Authentication error: ${decodeURIComponent(reason)}`);
+        } else {
+          setAuthMessage('Sign in could not be completed. Please try again.');
+        }
+      }
+    }
+  }, []);
 
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
 

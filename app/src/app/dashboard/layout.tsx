@@ -37,11 +37,12 @@ export default function DashboardLayout({
           setUser(data.user);
           setIsActivated(data.isActivated !== false);
         } else {
-          router.push('/');
+          const reason = data.error || 'no_active_session';
+          router.push(`/?auth=failed&err=${encodeURIComponent(reason)}`);
         }
       })
-      .catch(() => {
-        router.push('/');
+      .catch((err) => {
+        router.push(`/?auth=failed&err=${encodeURIComponent(err?.message || 'network_error')}`);
       });
   }, [router]);
 

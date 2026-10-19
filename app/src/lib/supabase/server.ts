@@ -13,21 +13,17 @@ export async function createSupabaseServerClient() {
 
   return createServerClient(url, anonKey, {
     cookies: {
-      get(name: string) {
-        return cookieStore.get(name)?.value;
+      getAll() {
+        return cookieStore.getAll();
       },
-      set(name: string, value: string, options?: Record<string, unknown>) {
+      setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
         try {
-          cookieStore.set({ name, value, ...(options as any) });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options)
+          );
         } catch {
-          // Can fail if called from a Server Component; safe to ignore
-        }
-      },
-      remove(name: string, options?: Record<string, unknown>) {
-        try {
-          cookieStore.set({ name, value: '', ...(options as any), maxAge: 0 });
-        } catch {
-          // Can fail if called from a Server Component; safe to ignore
+          // The `setAll` method was called from a Server Component.
+          // This can be safely ignored.
         }
       },
     },
