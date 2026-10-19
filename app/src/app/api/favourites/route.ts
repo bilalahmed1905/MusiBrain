@@ -69,9 +69,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       favourite: { ...favourite, tags: JSON.parse(favourite.tags) },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Add favourite error:', error);
-    return NextResponse.json({ error: 'Failed to add favourite' }, { status: 500 });
+    return NextResponse.json({ error: error?.message || 'Failed to add favourite' }, { status: 500 });
   }
 }
 

@@ -110,9 +110,11 @@ export default function InterviewPage() {
         setSearchQuery('');
         setSearchResults([]);
         setError('');
+      } else {
+        setError(data.error || 'Failed to add track. Please try again.');
       }
-    } catch {
-      setError('Failed to add track');
+    } catch (err: any) {
+      setError(err?.message || 'Failed to add track');
     }
   };
 
