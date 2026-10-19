@@ -7,6 +7,8 @@
 
 MusiBrain goes beyond surface-level streaming algorithms. By combining direct user taste interviews with sonic analysis and fast LLM reasoning, MusiBrain constructs a deep, inspectable, and persistent model of your music tastes—capturing the emotional textures, lyrical resonance, and musical structures that make songs truly "hit" for you.
 
+Try it here: https://musibrain.vercel.app
+
 ---
 
 ## ✨ Features
