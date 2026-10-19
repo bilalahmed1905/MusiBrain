@@ -55,6 +55,9 @@
 .contextBtn {
   text-align: left;
   border: none;
+  font: inherit;
+  color: inherit;
+  width: 100%;
 }
 
 /* ── Generating Animation ── */
