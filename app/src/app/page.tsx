@@ -6,32 +6,15 @@ import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 
 export default function LandingPage() {
   const [email, setEmail] = useState('');
-  const [isLoading, setIsLoading] = useState<'google' | 'email' | 'local' | null>(null);
+  const [isLoading, setIsLoading] = useState<'google' | 'email' | null>(null);
   const [authMessage, setAuthMessage] = useState('');
   const [showLogin, setShowLogin] = useState(false);
 
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
 
-  const handleLocalLogin = async () => {
-    setIsLoading('local');
-    setAuthMessage('');
-    try {
-      const res = await fetch('/api/auth/local', { method: 'POST' });
-      if (res.ok) {
-        window.location.href = '/dashboard';
-      } else {
-        setAuthMessage('Failed to initialize local session.');
-        setIsLoading(null);
-      }
-    } catch {
-      setAuthMessage('Failed to connect to local server.');
-      setIsLoading(null);
-    }
-  };
-
   const handleGoogleLogin = async () => {
     if (!supabase) {
-      setAuthMessage('Supabase cloud is offline. Click "Continue as Local User" below to enter immediately.');
+      setAuthMessage('Sign in is currently initializing. Please refresh and try again.');
       return;
     }
 
@@ -51,7 +34,7 @@ export default function LandingPage() {
         setIsLoading(null);
       }
     } catch {
-      setAuthMessage('Could not connect to Supabase. Try Local Mode below.');
+      setAuthMessage('Could not connect to authentication service. Please try again.');
       setIsLoading(null);
     }
   };
@@ -59,7 +42,7 @@ export default function LandingPage() {
   const handleEmailLogin = async () => {
     if (!email.trim()) return;
     if (!supabase) {
-      setAuthMessage('Supabase cloud is offline. Click "Continue as Local User" below to enter immediately.');
+      setAuthMessage('Sign in is currently initializing. Please refresh and try again.');
       return;
     }
 
@@ -80,7 +63,7 @@ export default function LandingPage() {
         setAuthMessage('Check your email for a magic link to finish signing in.');
       }
     } catch {
-      setAuthMessage('Could not connect to Supabase. Try Local Mode below.');
+      setAuthMessage('Could not connect to authentication service. Please try again.');
     }
 
     setIsLoading(null);
@@ -103,17 +86,10 @@ export default function LandingPage() {
         </div>
         <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
           <button 
-            className="btn btn-secondary" 
-            onClick={handleLocalLogin}
-            disabled={isLoading !== null}
-          >
-            {isLoading === 'local' ? 'Loading...' : '⚡ Local Mode'}
-          </button>
-          <button 
-            className="btn btn-ghost" 
+            className="btn btn-primary" 
             onClick={() => setShowLogin(true)}
           >
-            Get Started
+            Sign In
           </button>
         </div>
       </nav>
@@ -140,21 +116,17 @@ export default function LandingPage() {
           <div className={`${styles.heroCtas} fade-in stagger-3`}>
             <button 
               className="btn btn-primary btn-lg" 
-              onClick={handleLocalLogin}
+              onClick={() => setShowLogin(true)}
               disabled={isLoading !== null}
             >
-              {isLoading === 'local' ? (
-                <><div className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> Launching...</>
-              ) : (
-                <>Launch Your Taste Brain →</>
-              )}
+              Launch Your Taste Brain →
             </button>
-            <button 
+            <a 
+              href="#how-it-works"
               className="btn btn-ghost btn-lg"
-              onClick={() => setShowLogin(true)}
             >
-              Sign In Options
-            </button>
+              How It Works
+            </a>
           </div>
 
           {/* Feature pills */}
@@ -221,24 +193,6 @@ export default function LandingPage() {
             <p className="text-secondary" style={{ marginBottom: 'var(--space-xl)', fontSize: 'var(--text-sm)' }}>
               Sign in to save your taste brain and playlists.
             </p>
-
-            {/* Quick Local Login */}
-            <button
-              className="btn btn-secondary btn-lg"
-              style={{ width: '100%', marginBottom: 'var(--space-md)' }}
-              onClick={handleLocalLogin}
-              disabled={isLoading !== null}
-            >
-              {isLoading === 'local' ? (
-                <><div className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> Loading...</>
-              ) : (
-                <>⚡ Continue as Bilal Ahmed (Local Mode)</>
-              )}
-            </button>
-
-            <div style={{ textAlign: 'center', margin: 'var(--space-md) 0', color: 'var(--text-muted)', fontSize: 'var(--text-xs)' }}>
-              ── OR CLOUD SIGN IN ──
-            </div>
 
             <button
               className="btn btn-primary btn-lg"

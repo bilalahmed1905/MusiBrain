@@ -7,10 +7,10 @@ export const LOCAL_SESSION_COOKIE = 'musibrain_local_session';
 
 // Fallback default user if dev.db has no users
 const DEFAULT_LOCAL_USER = {
-  id: '23643bf4-3ba4-494f-96ae-154ad75892fd',
-  displayName: 'Bilal Ahmed',
-  email: 'bilalahmed1905@gmail.com',
-  profileImage: 'https://lh3.googleusercontent.com/a/ACg8ocLnhzj2HyRe_PeDYmj7YivWu2ET5vTdZUgrB9AAQDOl6Nwl7HZn=s96-c',
+  id: 'local-dev-user-0001',
+  displayName: 'Music Explorer',
+  email: 'explorer@musibrain.app',
+  profileImage: null,
 };
 
 export async function getLocalUser() {

@@ -123,7 +123,7 @@ export default function DashboardLayout({
           <form onSubmit={handleVerifyInvite} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
             <input
               type="text"
-              placeholder="Enter invite code (e.g. BILAL2025)"
+              placeholder="Enter invite code (e.g. BETA2025)"
               value={inviteCode}
               onChange={e => {
                 setInviteCode(e.target.value);

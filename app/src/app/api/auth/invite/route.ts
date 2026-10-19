@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     const isValid = allowedCodes.includes(enteredCode);
     if (!isValid) {
       return NextResponse.json(
-        { error: 'Invalid invite code. Please request an invite code from Bilal.' },
+        { error: 'Invalid invite code. Please request an invite code for access.' },
         { status: 403 }
       );
     }
