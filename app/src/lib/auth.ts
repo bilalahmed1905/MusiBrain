@@ -113,6 +113,8 @@ export async function ensureDbUser(user: User) {
     }
   }
 
+  const isAdmin = email === 'bilalahmed1905@gmail.com' || !process.env.INVITE_CODE;
+
   const existingById = await prisma.user.findUnique({ where: { id: user.id } });
   if (existingById) {
     return prisma.user.update({
@@ -121,6 +123,7 @@ export async function ensureDbUser(user: User) {
         displayName,
         ...(safeEmail ? { email: safeEmail } : {}),
         profileImage,
+        ...(isAdmin && !existingById.isActivated ? { isActivated: true } : {}),
       },
     });
   }
@@ -131,6 +134,7 @@ export async function ensureDbUser(user: User) {
       displayName,
       email: safeEmail,
       profileImage,
+      isActivated: isAdmin,
     },
   });
 }

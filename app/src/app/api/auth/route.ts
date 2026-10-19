@@ -12,7 +12,11 @@ export async function GET() {
     }
 
     const dbUser = await ensureDbUser(user);
-    return NextResponse.json({ user: dbUser });
+    const inviteRequired = Boolean(process.env.INVITE_CODE || process.env.INVITE_CODES);
+    const isOwner = dbUser.email === 'bilalahmed1905@gmail.com';
+    const isActivated = !inviteRequired || isOwner || Boolean(dbUser.isActivated);
+
+    return NextResponse.json({ user: dbUser, isActivated });
   } catch (error) {
     console.error('Auth error:', error);
     return NextResponse.json({ error: 'Authentication failed' }, { status: 500 });
