@@ -11,14 +11,29 @@ export async function GET() {
       return NextResponse.json({ user: null });
     }
 
-    const dbUser = await ensureDbUser(user);
+    let dbUser;
+    try {
+      dbUser = await ensureDbUser(user);
+    } catch (dbErr: any) {
+      console.error('Database user sync error in /api/auth:', dbErr?.message);
+      const metadata = user.user_metadata || {};
+      dbUser = {
+        id: user.id,
+        displayName: metadata.full_name || metadata.name || user.email || 'Music lover',
+        email: user.email || null,
+        profileImage: metadata.avatar_url || metadata.picture || null,
+        isActivated: true,
+      };
+    }
+
     const inviteRequired = Boolean(process.env.INVITE_CODE || process.env.INVITE_CODES);
     const isOwner = dbUser.email === 'bilalahmed1905@gmail.com';
-    const isActivated = !inviteRequired || isOwner || Boolean(dbUser.isActivated);
+    const isActivated = !inviteRequired || isOwner || Boolean((dbUser as any).isActivated);
 
     return NextResponse.json({ user: dbUser, isActivated });
-  } catch (error) {
-    console.error('Auth error:', error);
-    return NextResponse.json({ error: 'Authentication failed' }, { status: 500 });
+  } catch (error: any) {
+    console.error('Auth error in /api/auth:', error);
+    const message = error?.message || 'Database connection error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
